@@ -493,15 +493,20 @@ void drawchar(uint8_t *buff, uint8_t x, uint8_t line, uint8_t c) {
 }
 //*******************//
 
-
-// the most basic function, set a single pixel
-void setpixel(uint8_t *buff, uint8_t x, uint8_t y, uint8_t color) {
-	
+//The most basic function where a single pixel has to be written on (x,y) location on the LCD
+void setpixel(uint8_t *buff, uint8_t x, uint8_t y, uint8_t color)
+{
+	uint8_t bytePos = x + (y/8 + 128);
+	uint8_t yPos = 7 - (y % 8);
+	buff[bytePos] |= (1 << yPos);
 }
 
-// function to clear a single pixel
-void clearpixel(uint8_t *buff, uint8_t x, uint8_t y) {
-	
+//Clears a single pixel at location (x,y) on LCD
+void clearpixel(uint8_t *buff, uint8_t x, uint8_t y)
+{
+	uint8_t bytePos = x + (y/8 + 128);
+	uint8_t yPos = 7 - (y % 8);
+	buff[bytePos] &= ~(1 << yPos);
 }
 
 // function to write a string on the lcd
