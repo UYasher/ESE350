@@ -32,15 +32,19 @@ int main(void)
 	lcd_command(CMD_DISPLAY_ON);
 	lcd_set_brightness(0x18);
 	write_buffer(buff);
-	_delay_ms(10000);
+	_delay_ms(2000);
 	clear_buffer(buff);
 	
 	while (1)
 	{
-		drawchar(buff,0,0,displayChar);
+		
+		//drawchar(buff,0,0,displayChar);
+		//_delay_ms(500);
+		//displayChar++;
+		clear_buffer(buff);
+		drawstring(buff, 5, 1, "fuck pong");
+		drawline(buff, 1, 30, 64, 56, 0);
 		write_buffer(buff);
-		_delay_ms(5000);
-		displayChar++;
 	}
 }
 
