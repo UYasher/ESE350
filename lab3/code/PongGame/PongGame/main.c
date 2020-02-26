@@ -42,8 +42,9 @@ int main(void)
 		//_delay_ms(500);
 		//displayChar++;
 		clear_buffer(buff);
-		drawstring(buff, 5, 1, "fuck pong");
-		drawline(buff, 1, 30, 64, 56, 0);
+		//drawrect(buff, 125, 62, 15, 14, 0);
+		//fillcircle(buff, 100, 43, 20, 0);
+		drawcircle(buff, 64, 32, 2, 0);
 		write_buffer(buff);
 	}
 }

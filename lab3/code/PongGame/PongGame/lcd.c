@@ -496,15 +496,18 @@ void drawchar(uint8_t *buff, uint8_t x, uint8_t line, uint8_t c) {
 //The most basic function where a single pixel has to be written on (x,y) location on the LCD
 void setpixel(uint8_t *buff, uint8_t x, uint8_t y, uint8_t color)
 {
-	uint8_t bytePos = x + (y/8 + 128);
-	uint8_t yPos = 7 - (y % 8);
-	buff[bytePos] |= (1 << yPos);
+	if(x >= 0 && x < 128 && y >= 0 && y < 64)
+	{
+		long bytePos = x + (y/8 * 128);
+		uint8_t yPos = 7 - (y % 8);
+		buff[bytePos] |= (1 << yPos);
+	}
 }
 
 //Clears a single pixel at location (x,y) on LCD
 void clearpixel(uint8_t *buff, uint8_t x, uint8_t y)
 {
-	uint8_t bytePos = x + (y/8 + 128);
+	long bytePos = x + (y/8 * 128);
 	uint8_t yPos = 7 - (y % 8);
 	buff[bytePos] &= ~(1 << yPos);
 }
@@ -599,24 +602,51 @@ void drawline(uint8_t *buff,uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint
 
 // function to draw a filled rectangle
 void fillrect(uint8_t *buff,uint8_t x, uint8_t y, uint8_t w, uint8_t h,uint8_t color) {
-	
+	for(int i = 0; i < w; i++)
+	{
+		for(int j = 0; j < h; j++)
+		{
+			setpixel(buff, x+i, y+j, color);
+		}
+	}
 }
 
 
 // function to draw a rectangle
 void drawrect(uint8_t *buff,uint8_t x, uint8_t y, uint8_t w, uint8_t h,uint8_t color) {
-	
+	drawline(buff, x, y, x+w-1, y, color);
+	drawline(buff, x+w-1, y, x+w-1, y+h-1, color);
+	drawline(buff, x+w-1, y+h-1, x, y+h-1, color);
+	drawline(buff, x, y+h-1, x, y, color);
 }
 
 
 // function to draw a circle
 void drawcircle(uint8_t *buff,uint8_t x0, uint8_t y0, uint8_t r,uint8_t color) {
-	
+	for(int x = x0-r; x <= x0+r; x++)
+	{
+		for(int y = y0-r; y <= y0+r; y++)
+		{
+			if((r*r+r >= (x-x0)*(x-x0) + (y-y0)*(y-y0)) && (r*r-r <= (x-x0)*(x-x0) + (y-y0)*(y-y0)))
+			{
+				setpixel(buff, x, y, 0);
+			}
+		}
+	}
 }
 
 
 // function to draw a filled circle
 void fillcircle(uint8_t *buff,uint8_t x0, uint8_t y0, uint8_t r,uint8_t color) {
-	
+	for(int x = x0-r; x <= x0+r; x++)
+	{
+		for(int y = y0-r; y <= y0+r; y++)
+		{
+			if(r*r > (x-x0)*(x-x0) + (y-y0)*(y-y0)) 
+			{
+				setpixel(buff, x, y, 0);
+			}
+		}
+	}
 }
 
