@@ -70,11 +70,11 @@ int main(void)
 	
 	while (1)
 	{
-		x = get_x();
+		//x = get_x();
 		y = get_y();
 		
 		char out_char[10];
-		sprintf(out_char, "%d \n", x);
+		sprintf(out_char, "%d \n", y);
 		USART_putstring(out_char);
 		
 		//USART_putstring("Got past first print\n");
