@@ -76,6 +76,7 @@ int main(void)
 	{
 		x = get_x();
 		y = get_y();
+		int accel = read_accelerometer();
 		
 		/*
 		char out_char[20];

@@ -24,14 +24,33 @@ void reset_positions(void){
 	paddle2_y = 26;
 }
 
+int read_accelerometer(void){
+	// Set ADC flags
+	ADMUX |= (1 << REFS0); // AREF = AVcc
+	// Set to read from X- (ie PC5)
+	ADMUX |= (1 << 0);
+	ADMUX &= ~(1 << 3) & ~(1 << 2) & ~(1 << 1);
+	ADCSRA |= (1 << ADEN); // ADC enable
+	ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); // 128 Prescaler
+	ADCSRA |= (1 << ADSC); // Start conversion
+
+	// Read ADC
+	while(ADCSRA & (1<<ADSC));
+	char accel_char[20];
+	sprintf(accel_char, "%d\n", ADC);
+	USART_putstring(accel_char);
+	return ADC; // Return the y value
+}
+
 void init_game(void){
-	game_type = 1;
+	game_type = 0;
 	
 	srand(TCNT0);
 	score1 = 0;
 	score2 = 0;
 	
 	DDRB |= (1 << 1); // Set speaker to output
+	DDRC &= ~(1 << 1); // Set accelerometer to input
 	
 	reset_positions();
 }
@@ -93,7 +112,7 @@ void update_game_state(int cursor_x, int cursor_y){
 	ball_y += ball_vy;
 	
 	// Update paddle position
-	if (cursor_x >= 0 && cursor_x <= 127){ // If receiving valid input
+	if (cursor_x >= 0 && cursor_x <= 127 && game_type != 0){ // If receiving valid input
 		if (cursor_x <= 63){ // If first paddle
 			if (cursor_y >= 64){ // If touching top of screen
 				paddle1_y -= 6;
@@ -114,7 +133,15 @@ void update_game_state(int cursor_x, int cursor_y){
 		}
 	}
 	if (game_type < 2){
-		paddle2_y = ball_y;
+		paddle2_y = ball_y - 6 + (rand() % 20);
+	}
+	if (game_type == 0){
+		if (read_accelerometer() < 323){
+			paddle1_y += 6;
+		}
+		if (read_accelerometer() > 335){
+			paddle1_y -= 6;
+		}
 	}
 	
 	// Make sure paddle is not out of bounds
