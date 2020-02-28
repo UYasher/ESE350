@@ -8,6 +8,8 @@ int score1, score2;
 
 int game_type; // 0 = accelerometer, 1 = 1 player, 2 = 2 player
 
+int half_period  = 239/2;
+
 void reset_positions(void){
 	ball_x = 64;
 	ball_y = 32;
@@ -23,35 +25,52 @@ void reset_positions(void){
 }
 
 void init_game(void){
+	game_type = 1;
+	
 	srand(TCNT0);
 	score1 = 0;
 	score2 = 0;
 	
+	DDRB |= (1 << 1); // Set speaker to output
+	
 	reset_positions();
+}
+
+void sound_buzzer(){
+	// Sound buzzer
+	PORTB |= (1 << 1);
+	_delay_ms(100);
+	PORTB &= ~(1 << 1);
 }
 
 void update_game_state(int cursor_x, int cursor_y){
 	// Check if a player has lost
 	if (score1 > 5 || score2 > 5){
+		// Turn screen red
 		DDRB |= (1 << 0) | (1 << 2);
 		PORTB |= (1 << 0) | (1 << 2);
 		_delay_ms(10000);
 		PORTB &= ~(1 << 0) & ~(1 << 2);
+		
+		// Reset game
 		init_game();
 	}
 	
 	// Update ball velocity
 	if ((ball_y <= 2) || (ball_y >= 62)){ // If ball hits a wall
 		ball_vy *= -1;
+		sound_buzzer();
 	}
 	if (ball_x <= 5){ // If ball hits player1 paddle
 		if (ball_y >= paddle1_y && ball_y <= paddle1_y+12){
+			sound_buzzer();
 			ball_vx *= -1.5;
 			ball_vy += 2 - (rand() % 4);
 		}
 	}
 	if (ball_x >= 123){ // If ball hits player 2 paddle
 		if (ball_y >= paddle2_y && ball_y <= paddle2_y+12){
+			sound_buzzer();
 			ball_vx *=-1.5;
 			ball_vy += 2 - (rand() % 4);
 		}
@@ -60,9 +79,11 @@ void update_game_state(int cursor_x, int cursor_y){
 	// If hits boundary
 	if(ball_x < 3){
 		score2 += 1;
+		sound_buzzer();
 		reset_positions();
 	}
 	if(ball_x > 125){
+		sound_buzzer();
 		score1 += 1;
 		reset_positions();
 	}
@@ -82,13 +103,18 @@ void update_game_state(int cursor_x, int cursor_y){
 			}
 		}
 		else{
-			if (cursor_y >= 64){
-				paddle2_y -= 6;
-			}
-			else{
-				paddle2_y += 6;
+			if (game_type == 2){
+				if (cursor_y >= 64){
+					paddle2_y -= 6;
+				}
+				else{
+					paddle2_y += 6;
+				}
 			}
 		}
+	}
+	if (game_type < 2){
+		paddle2_y = ball_y;
 	}
 	
 	// Make sure paddle is not out of bounds

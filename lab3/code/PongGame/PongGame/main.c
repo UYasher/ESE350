@@ -77,9 +77,11 @@ int main(void)
 		x = get_x();
 		y = get_y();
 		
+		/*
 		char out_char[20];
 		sprintf(out_char, "(%d, %d)\n", x, y);
 		USART_putstring(out_char);
+		*/
 		
 		//USART_putstring("Got past first print\n");
 		update_game_state(x, y);
