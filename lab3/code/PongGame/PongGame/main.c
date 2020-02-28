@@ -8,6 +8,7 @@
 #include "usart.h"
 #include "lcd.h"
 #include "touchscreen.c"
+#include "gameLogic.c"
 
 #define FREQ 16000000
 //#define BAUD 9600
@@ -68,20 +69,24 @@ int main(void)
 	int x = 0;
 	int y = 0;
 	
+	// Init Game
+	init_game();
+	
 	while (1)
 	{
-		//x = get_x();
+		x = get_x();
 		y = get_y();
 		
-		char out_char[10];
-		sprintf(out_char, "%d \n", y);
+		char out_char[20];
+		sprintf(out_char, "(%d, %d)\n", x, y);
 		USART_putstring(out_char);
 		
 		//USART_putstring("Got past first print\n");
-		
-		clear_buffer(buff);	
-		write_buffer(buff);
+		update_game_state(x, y);
+		render();
 		//USART_putstring("Got past buffer stuff\n");
+		
+		_delay_ms(1000);
 	}
 }
 
