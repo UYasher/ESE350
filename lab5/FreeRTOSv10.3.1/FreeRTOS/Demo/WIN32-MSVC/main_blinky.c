@@ -68,13 +68,16 @@ static void chris() {
 			queueEmpty = 1;
 		}
 		else {
-			// Create Temp Buffer
+			// Create Temp TaskHandle
+			TaskHandle_t* temp;
 			// Load student from queue into buffer
+			temp = xQueueReceive(OHqueue, temp, 0);
 			// Wake up Student
+			vTaskResume(temp);
 		}
 		xSemaphoreGive(queueLock);
 		if (queueEmpty) {
-			xSemaphoreTake(chrisAwakeLock, portDELAY_MAX);
+			xSemaphoreTake(chrisAwakeLock, portMAX_DELAY);
 			chrisAwake = 0;
 			xSemaphoreGive(chrisAwakeLock);
 			vTaskSuspend(chrisHandle);
