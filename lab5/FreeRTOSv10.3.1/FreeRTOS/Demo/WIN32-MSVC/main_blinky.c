@@ -31,6 +31,8 @@ static void student(char* name) {
 			chrisAwake = 1;
 			vTaskResume(chrisHandle);
 			wasHelped = 2; // Make sure the student helped by Chris does not sleep eternally
+			concurrency_safe_print(name);
+			concurrency_safe_print(" went from going about life to being helped by Chris\n");
 		}
 		else {
 			xSemaphoreTake(queueLock, portMAX_DELAY);
@@ -45,14 +47,21 @@ static void student(char* name) {
 		if (wasHelped) {
 			// Suspend thread if waiting in queue
 			if (wasHelped == 1) {
+				concurrency_safe_print(name);
+				concurrency_safe_print(" went from going about life to waiting in OH\n");
 				vTaskSuspend(xTaskGetCurrentTaskHandle());
+				concurrency_safe_print(name);
+				concurrency_safe_print(" went from waiting in OH to being helped by Chris\n");
 			}
-
+			concurrency_safe_print(name);
+			concurrency_safe_print(" went from being helped by Chris to going about life\n");
 			// Wait if helped
 			int delay_time = rand() % 5 + 3;
 			vTaskDelay(delay_time * second);
 		}
 		else {
+			concurrency_safe_print(name);
+			concurrency_safe_print(" went from going about life to going about life\n");
 			// Wait if not helped
 			int delay_time = rand() % 5 + 1;
 			vTaskDelay(delay_time * second);
@@ -68,6 +77,7 @@ static void chris() {
 			queueEmpty = 1;
 		}
 		else {
+			concurrency_safe_print("Chris went from helping students to helping students\n");
 			// Create Temp TaskHandle
 			TaskHandle_t* temp;
 			// Load student from queue into buffer
@@ -79,8 +89,10 @@ static void chris() {
 		if (queueEmpty) {
 			xSemaphoreTake(chrisAwakeLock, portMAX_DELAY);
 			chrisAwake = 0;
+			concurrency_safe_print("Chris went from helping students to playing Sudoku\n");
 			xSemaphoreGive(chrisAwakeLock);
 			vTaskSuspend(chrisHandle);
+			concurrency_safe_print("Chris went from playing Sudoku to helping students\n");
 		}
 	}
 }
