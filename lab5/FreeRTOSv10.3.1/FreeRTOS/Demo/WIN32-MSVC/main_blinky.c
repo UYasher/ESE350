@@ -38,8 +38,8 @@ static void student(char* name) {
 		else {
 			xSemaphoreTake(queueLock, portMAX_DELAY);
 			if (uxQueueSpacesAvailable(OHqueue) > 0) {
-				//TaskHandle_t currHandle = xTaskGetCurrentTaskHandle();
-				//xQueueSend(OHqueue, &(currHandle), 0);
+				TaskHandle_t currHandle = xTaskGetCurrentTaskHandle();
+				xQueueSend(OHqueue, &(currHandle), 0);
 				wasHelped = 1;
 			}
 			xSemaphoreGive(queueLock);
@@ -84,11 +84,11 @@ static void chris() {
 		}
 		else {
 			// Create Temp TaskHandle
-			//TaskHandle_t temp = NULL;
+			TaskHandle_t temp = NULL;
 			// Load student from queue into buffer
-			//xQueueReceive(OHqueue, &(temp), 0);
+			xQueueReceive(OHqueue, &(temp), 0);
 			// Wake up Student
-			//vTaskResume(temp);
+			vTaskResume(temp);
 		}
 		xSemaphoreGive(queueLock);
 		if (queueEmpty) {
@@ -137,8 +137,8 @@ void main_blinky(void)
 	{
 		xTaskCreate(chrisTask, "Chris", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 		xTaskCreate(shriyash, "Shriyash", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-		//xTaskCreate(richard, "Richard", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-		//xTaskCreate(lakshay, "Lakshay", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+		xTaskCreate(richard, "Richard", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+		xTaskCreate(lakshay, "Lakshay", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 		vTaskStartScheduler();
 	}
 	printf("ERROR: Should not get here\r\n");
