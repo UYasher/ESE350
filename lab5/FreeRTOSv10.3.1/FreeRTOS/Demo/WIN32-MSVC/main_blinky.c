@@ -7,6 +7,7 @@
 //Necessary to allow the mutex to stall indefinitly
 #define INCLUDE_vTaskSuspend                    1
 #define INCLUDE_vTaskDelay                      1
+#define INCLUDE_xTaskGetCurrentTaskHandle       1
 // The tasks as described in the comments at the top of this file.
 static SemaphoreHandle_t printLock;
 static SemaphoreHandle_t chrisAwakeLock;
@@ -14,7 +15,7 @@ static SemaphoreHandle_t queueLock;
 static QueueHandle_t OHqueue;
 static const int queueSize = 5;
 static TaskHandle_t chrisHandle;
-static int chrisAwake;
+static int chrisAwake = 0;
 const TickType_t second = 1000 / portTICK_PERIOD_MS;
 
 static void concurrency_safe_print(char* strToPrint) {
@@ -37,7 +38,8 @@ static void student(char* name) {
 		else {
 			xSemaphoreTake(queueLock, portMAX_DELAY);
 			if (uxQueueSpacesAvailable(OHqueue) > 0) {
-				xQueueSend(OHqueue, xTaskGetCurrentTaskHandle(), 0);
+				//TaskHandle_t currHandle = xTaskGetCurrentTaskHandle();
+				//xQueueSend(OHqueue, &(currHandle), 0);
 				wasHelped = 1;
 			}
 			xSemaphoreGive(queueLock);
@@ -70,20 +72,23 @@ static void student(char* name) {
 }
 
 static void chris() {
+
+	chrisHandle = xTaskGetCurrentTaskHandle();
+
 	while (1) {
 		int queueEmpty = 0;
 		xSemaphoreTake(queueLock, portMAX_DELAY);
-		if (uxQueueSpacesAvailable(OHqueue) == queueSize) {
+		if (uxQueueSpacesAvailable(OHqueue) - queueSize <= 0) {
+			concurrency_safe_print("QUEUE EMPTY\n");
 			queueEmpty = 1;
 		}
 		else {
-			concurrency_safe_print("Chris went from helping students to helping students\n");
 			// Create Temp TaskHandle
-			TaskHandle_t* temp;
+			//TaskHandle_t temp = NULL;
 			// Load student from queue into buffer
-			temp = xQueueReceive(OHqueue, temp, 0);
+			//xQueueReceive(OHqueue, &(temp), 0);
 			// Wake up Student
-			vTaskResume(temp);
+			//vTaskResume(temp);
 		}
 		xSemaphoreGive(queueLock);
 		if (queueEmpty) {
@@ -97,32 +102,45 @@ static void chris() {
 	}
 }
 
+static void chrisTask(void *pvParameters)
+{
+	(void)pvParameters;
+	chris();
+}
+
+static void shriyash(void *pvParameters)
+{
+	(void)pvParameters;
+	student("Shriyash");
+}
+
+static void richard(void *pvParameters)
+{
+	(void)pvParameters;
+	student("Richard");
+}
+
+static void lakshay(void *pvParameters)
+{
+	(void)pvParameters;
+	student("Lakshay");
+}
+
 void main_blinky(void)
 {
-	accountMutex = xSemaphoreCreateMutex();
-	if (accountMutex != NULL)
-	{
-		xTaskCreate(withdraw100Task,		/* The function that implements the task. */
-			"withdraw100Task", 	/* The text name assigned to the task - for debug only as it is not used by the kernel. */
-			configMINIMAL_STACK_SIZE, 	/* The size of the stack to allocate to the task. */
-			NULL, 			/* The parameter passed to the task - not used in this simple case. */
-			tskIDLE_PRIORITY + 1,	/* The priority assigned to the task. */
-			NULL);			/* The task handle is not required, so NULL is passed. */
+	printLock = xSemaphoreCreateMutex();
+	chrisAwakeLock = xSemaphoreCreateMutex();
+	queueLock = xSemaphoreCreateMutex();
+	OHqueue = xQueueCreate(queueSize, sizeof(TaskHandle_t));
 
-		xTaskCreate(deposite200Task, "deposite200Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+	if ((printLock != NULL) && (chrisAwakeLock != NULL) && (queueLock != NULL) && (OHqueue != NULL))
+	{
+		xTaskCreate(chrisTask, "Chris", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+		xTaskCreate(shriyash, "Shriyash", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+		//xTaskCreate(richard, "Richard", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+		//xTaskCreate(lakshay, "Lakshay", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 		vTaskStartScheduler();
 	}
 	printf("ERROR: Should not get here\r\n");
 	for (;; );
-}
-static void deposite200Task(void *pvParameters)
-{
-	(void)pvParameters;
-	deposit(200);
-}
-
-static void withdraw100Task(void *pvParameters)
-{
-	(void)pvParameters;
-	withdraw(100);
 }
