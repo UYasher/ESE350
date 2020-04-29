@@ -25,28 +25,28 @@
  * 1 tab == 4 spaces!
  */
 
- /******************************************************************************
-  * NOTE: Windows will not be running the FreeRTOS demo threads continuously, so
-  * do not expect to get real time behaviour from the FreeRTOS Windows port, or
-  * this demo application.  Also, the timing information in the FreeRTOS+Trace
-  * logs have no meaningful units.  See the documentation page for the Windows
-  * port for further information:
-  * http://www.freertos.org/FreeRTOS-Windows-Simulator-Emulator-for-Visual-Studio-and-Eclipse-MingW.html
-  *
-  * NOTE 2:  This project provides two demo applications.  A simple blinky style
-  * project, and a more comprehensive test and demo application.  The
-  * mainCREATE_SIMPLE_BLINKY_DEMO_ONLY setting in main.c is used to select
-  * between the two.  See the notes on using mainCREATE_SIMPLE_BLINKY_DEMO_ONLY
-  * in main.c.  This file implements the simply blinky version.  Console output
-  * is used in place of the normal LED toggling.
-  *
-  * NOTE 3:  This file only contains the source code that is specific to the
-  * basic demo.  Generic functions, such FreeRTOS hook functions, are defined
-  * in main.c.
-  ******************************************************************************/
+/******************************************************************************
+ * NOTE: Windows will not be running the FreeRTOS demo threads continuously, so
+ * do not expect to get real time behaviour from the FreeRTOS Windows port, or
+ * this demo application.  Also, the timing information in the FreeRTOS+Trace
+ * logs have no meaningful units.  See the documentation page for the Windows
+ * port for further information:
+ * http://www.freertos.org/FreeRTOS-Windows-Simulator-Emulator-for-Visual-Studio-and-Eclipse-MingW.html
+ *
+ * NOTE 2:  This project provides two demo applications.  A simple blinky style
+ * project, and a more comprehensive test and demo application.  The
+ * mainCREATE_SIMPLE_BLINKY_DEMO_ONLY setting in main.c is used to select
+ * between the two.  See the notes on using mainCREATE_SIMPLE_BLINKY_DEMO_ONLY
+ * in main.c.  This file implements the simply blinky version.  Console output
+ * is used in place of the normal LED toggling.
+ *
+ * NOTE 3:  This file only contains the source code that is specific to the
+ * basic demo.  Generic functions, such FreeRTOS hook functions, are defined
+ * in main.c.
+ ******************************************************************************/
+ 
 
-
-  /* Standard includes. */
+/* Standard includes. */
 #include <stdio.h>
 #include <conio.h>
 #include <stdlib.h>
@@ -91,14 +91,13 @@ unsigned int T2TIME = 0;
 unsigned short T1PRIO = 0;
 unsigned short T2PRIO = 0;
 
-
 /*-----------------------------------------------------------*/
 
 /*
  * The tasks as described in the comments at the top of this file.
  */
-static void prvQueueReceiveTask(void *pvParameters);
-static void prvQueueSendTask(void *pvParameters);
+static void prvQueueReceiveTask( void *pvParameters );
+static void prvQueueSendTask( void *pvParameters );
 static void T1Task(void* pvParameters);
 static void T2Task(void* pvParameters);
 
@@ -106,7 +105,7 @@ static void T2Task(void* pvParameters);
 /*
  * The callback function executed when the software timer expires.
  */
-static void prvQueueSendTimerCallback(TimerHandle_t xTimerHandle);
+static void prvQueueSendTimerCallback( TimerHandle_t xTimerHandle );
 
 /*-----------------------------------------------------------*/
 
@@ -119,34 +118,55 @@ static TimerHandle_t xTimer = NULL;
 /*-----------------------------------------------------------*/
 
 /*** SEE THE COMMENTS AT THE TOP OF THIS FILE ***/
-void main_blinky(void)
+void main_blinky( void )
 {
 	//TODO: randomly generate frequency and time for your tasks, and set priority.
 	//you can use srand() and rand()
+	srand(4);
+
+	T1FREQ = rand() % 10 + 1;
+	T1TIME = rand() % (T1FREQ - 1) + 1;
+
+	T2FREQ = rand() % 10 + 1;
+	T2TIME = rand() % (T1FREQ - 1) + 1;
+
+	if (T2FREQ > T1FREQ) { // If task 2 executes less frequently than task 1
+		// Give task 1 higher priority
+		T1PRIO = tskIDLE_PRIORITY + 2;
+		T2PRIO = tskIDLE_PRIORITY + 1;
+	}
+	else {
+		// Give task 2 higher priority
+		T1PRIO = tskIDLE_PRIORITY + 1;
+		T2PRIO = tskIDLE_PRIORITY + 2;
+	}
+
+	printf("T1PRIO: %d", T1PRIO);
+	printf("T2PRIO: %d", T2PRIO);
 
 	printf("Task, Freq, Time, Prio \r\n");
 	printf("T1, %hu, %hu, %hu\r\n", T1FREQ, T1TIME, T1PRIO);
 	printf("T2, %hu, %hu, %hu\r\n", T2FREQ, T2TIME, T2PRIO);
 
-	const TickType_t xTimerPeriod = mainTIMER_SEND_FREQUENCY_MS;
+const TickType_t xTimerPeriod = mainTIMER_SEND_FREQUENCY_MS;
 
 	/* Create the queue. */
-	xQueue = xQueueCreate(mainQUEUE_LENGTH, sizeof(uint32_t));
+	xQueue = xQueueCreate( mainQUEUE_LENGTH, sizeof( uint32_t ) );
 
-	if (xQueue != NULL)
+	if( xQueue != NULL )
 	{
 		/*Create your tasks*/
-		xTaskCreate(T1Task, "T1", configMINIMAL_STACK_SIZE * 4, NULL, T1PRIO, NULL);
+		xTaskCreate(T1Task, "T1", configMINIMAL_STACK_SIZE *4, NULL, T1PRIO, NULL);
 		xTaskCreate(T2Task, "T2", configMINIMAL_STACK_SIZE * 4, NULL, T2PRIO, NULL);
 
 		/* Create the software timer, but don't start it yet. */
-		xTimer = xTimerCreate("Timer",				/* The text name assigned to the software timer - for debug only as it is not used by the kernel. */
-			xTimerPeriod,		/* The period of the software timer in ticks. */
-			pdFALSE,			/* xAutoReload is set to pdFALSE, so this is a one-shot timer. */
-			NULL,				/* The timer's ID is not used. */
-			prvQueueSendTimerCallback);/* The function executed when the timer expires. */
+		xTimer = xTimerCreate( "Timer",				/* The text name assigned to the software timer - for debug only as it is not used by the kernel. */
+								xTimerPeriod,		/* The period of the software timer in ticks. */
+								pdFALSE,			/* xAutoReload is set to pdFALSE, so this is a one-shot timer. */
+								NULL,				/* The timer's ID is not used. */
+								prvQueueSendTimerCallback );/* The function executed when the timer expires. */
 
-		xTimerStart(xTimer, 0); /* The scheduler has not started so use a block time of 0. */
+		xTimerStart( xTimer, 0 ); /* The scheduler has not started so use a block time of 0. */
 
 		/* Start the tasks and timer running. */
 		vTaskStartScheduler();
@@ -157,7 +177,7 @@ void main_blinky(void)
 	there was insufficient FreeRTOS heap memory available for the idle and/or
 	timer tasks	to be created.  See the memory management section on the
 	FreeRTOS web site for more details. */
-	for (;; );
+	for( ;; );
 }
 /*-----------------------------------------------------------*/
 
@@ -166,14 +186,25 @@ static void T1Task(void* pvParameters) {
 	TickType_t xBlockTime = T1FREQ;
 	(void)pvParameters;
 	xNextWakeTime = xTaskGetTickCount();
+	int startTime;
 	//TODO: any other variables to keep track of things.
 
 	for (;; )
 	{
 		vTaskDelayUntil(&xNextWakeTime, xBlockTime);
 		//TODO: write your tasks to take TIME number of ticks to finish.
-
-		//TODO: write code to check deadline miss for T1task
+		startTime = xTaskGetTickCount();
+		int i = 0;
+		while (i < T1TIME) {
+			if (xTaskGetTickCount() > startTime) {
+				startTime = xTaskGetTickCount();
+				i++;
+			}
+			if (xTaskGetTickCount() > xNextWakeTime) {
+				printf("T1 Missed Deadline %d", xTaskGetTickCount());
+				vTaskSuspendAll();
+			}
+		}
 	}
 }
 
@@ -182,23 +213,33 @@ static void T2Task(void* pvParameters) {
 	TickType_t xBlockTime = T2FREQ;
 	(void)pvParameters;
 	xNextWakeTime = xTaskGetTickCount();
+	int startTime;
 	//TODO: any other variables to keep track of things.
 
 	for (;; )
 	{
 		vTaskDelayUntil(&xNextWakeTime, xBlockTime);
 		//TODO: write your tasks to take TIME number of ticks to finish.
-
-		//TODO: write code to check deadline miss for T1task
+		int i = 0;
+		while (i < T2TIME-1) {
+			if (xTaskGetTickCount() > startTime) {
+				startTime = xTaskGetTickCount();
+				i++;
+			}
+			if (xTaskGetTickCount() > xNextWakeTime) {
+				printf("T2 Missed Deadline %d", xTaskGetTickCount());
+				vTaskSuspendAll();
+			}
+		}
 	}
 }
 
 
 /*-----------------------------------------------------------*/
 
-static void prvQueueSendTimerCallback(TimerHandle_t xTimerHandle)
+static void prvQueueSendTimerCallback( TimerHandle_t xTimerHandle )
 {
-	const uint32_t ulValueToSend = mainVALUE_SENT_FROM_TIMER;
+const uint32_t ulValueToSend = mainVALUE_SENT_FROM_TIMER;
 
 	/* This is the software timer callback function.  The software timer has a
 	period of two seconds and is reset each time a key is pressed.  This
@@ -206,29 +247,29 @@ static void prvQueueSendTimerCallback(TimerHandle_t xTimerHandle)
 	if a key is not pressed for two seconds. */
 
 	/* Avoid compiler warnings resulting from the unused parameter. */
-	(void)xTimerHandle;
+	( void ) xTimerHandle;
 
 	/* Send to the queue - causing the queue receive task to unblock and
 	write out a message.  This function is called from the timer/daemon task, so
 	must not block.  Hence the block time is set to 0. */
-	xQueueSend(xQueue, &ulValueToSend, 0U);
+	xQueueSend( xQueue, &ulValueToSend, 0U );
 }
 /*-----------------------------------------------------------*/
 
-static void prvQueueReceiveTask(void *pvParameters)
+static void prvQueueReceiveTask( void *pvParameters )
 {
-	uint32_t ulReceivedValue;
+uint32_t ulReceivedValue;
 
 	/* Prevent the compiler warning about the unused parameter. */
-	(void)pvParameters;
+	( void ) pvParameters;
 
-	for (;; )
+	for( ;; )
 	{
 		/* Wait until something arrives in the queue - this task will block
 		indefinitely provided INCLUDE_vTaskSuspend is set to 1 in
 		FreeRTOSConfig.h.  It will not use any CPU time while it is in the
 		Blocked state. */
-		xQueueReceive(xQueue, &ulReceivedValue, portMAX_DELAY);
+		xQueueReceive( xQueue, &ulReceivedValue, portMAX_DELAY );
 
 		/*  To get here something must have been received from the queue, but
 		is it an expected value?  Normally calling printf() from a task is not
@@ -236,57 +277,57 @@ static void prvQueueReceiveTask(void *pvParameters)
 		using console IO so it is ok.  However, note the comments at the top of
 		this file about the risks of making Windows system calls (such as
 		console output) from a FreeRTOS task. */
-		if (ulReceivedValue == mainVALUE_SENT_FROM_TASK)
+		if( ulReceivedValue == mainVALUE_SENT_FROM_TASK )
 		{
-			printf("Message received from task\r\n");
+			printf( "Message received from task\r\n" );
 		}
-		else if (ulReceivedValue == mainVALUE_SENT_FROM_TIMER)
+		else if( ulReceivedValue == mainVALUE_SENT_FROM_TIMER )
 		{
-			printf("Message received from software timer\r\n");
+			printf( "Message received from software timer\r\n" );
 		}
 		else
 		{
-			printf("Unexpected message\r\n");
+			printf( "Unexpected message\r\n" );
 		}
 
 		/* Reset the timer if a key has been pressed.  The timer will write
 		mainVALUE_SENT_FROM_TIMER to the queue when it expires. */
-		if (_kbhit() != 0)
+		if( _kbhit() != 0 )
 		{
 			/* Remove the key from the input buffer. */
-			(void)_getch();
+			( void ) _getch();
 
 			/* Reset the software timer. */
-			xTimerReset(xTimer, portMAX_DELAY);
+			xTimerReset( xTimer, portMAX_DELAY );
 		}
 	}
 }
 /*-----------------------------------------------------------*/
 
-static void prvQueueSendTask(void *pvParameters)
+static void prvQueueSendTask( void *pvParameters )
 {
-	TickType_t xNextWakeTime;
-	const TickType_t xBlockTime = mainTASK_SEND_FREQUENCY_MS;
-	const uint32_t ulValueToSend = mainVALUE_SENT_FROM_TASK;
+TickType_t xNextWakeTime;
+const TickType_t xBlockTime = mainTASK_SEND_FREQUENCY_MS;
+const uint32_t ulValueToSend = mainVALUE_SENT_FROM_TASK;
 
 	/* Prevent the compiler warning about the unused parameter. */
-	(void)pvParameters;
+	( void ) pvParameters;
 
 	/* Initialise xNextWakeTime - this only needs to be done once. */
 	xNextWakeTime = xTaskGetTickCount();
 
-	for (;; )
+	for( ;; )
 	{
 		/* Place this task in the blocked state until it is time to run again.
 		The block time is specified in ticks, pdMS_TO_TICKS() was used to
 		convert a time specified in milliseconds into a time specified in ticks.
 		While in the Blocked state this task will not consume any CPU time. */
-		vTaskDelayUntil(&xNextWakeTime, xBlockTime);
+		vTaskDelayUntil( &xNextWakeTime, xBlockTime );
 
 		/* Send to the queue - causing the queue receive task to unblock and
 		write to the console.  0 is used as the block time so the send operation
 		will not block - it shouldn't need to block as the queue should always
 		have at least one space at this point in the code. */
-		xQueueSend(xQueue, &ulValueToSend, 0U);
+		xQueueSend( xQueue, &ulValueToSend, 0U );
 	}
 }
